@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yunxiao CLI Workflow"
+  short_description: "Repo workflow for Yunxiao CLI changes"
+  default_prompt: "Use $yunxiao-cli-workflow to make a scoped Yunxiao CLI change."

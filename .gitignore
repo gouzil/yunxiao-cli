@@ -1,0 +1,12 @@
+.DS_Store
+
+# Local config and indexes
+.yunxiao/
+.codegraph/
+
+# Build/test output
+bin/
+dist/
+tmp/
+*.test
+coverage.out
