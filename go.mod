@@ -1,4 +1,4 @@
-module github.com/gouzi/yunxiao-cli
+module github.com/gouzil/yunxiao-cli
 
 go 1.25.8
 

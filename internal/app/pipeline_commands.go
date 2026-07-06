@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gouzi/yunxiao-cli/internal/output"
-	"github.com/gouzi/yunxiao-cli/internal/yunxiao"
+	"github.com/gouzil/yunxiao-cli/internal/output"
+	"github.com/gouzil/yunxiao-cli/internal/yunxiao"
 	"github.com/spf13/cobra"
 )
 

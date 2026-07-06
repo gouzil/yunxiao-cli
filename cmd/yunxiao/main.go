@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gouzi/yunxiao-cli/internal/app"
+	"github.com/gouzil/yunxiao-cli/internal/app"
 )
 
 var (

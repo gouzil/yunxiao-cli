@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gouzi/yunxiao-cli/internal/api"
+	"github.com/gouzil/yunxiao-cli/internal/api"
 )
 
 func TestListPipelinesUsesOrganizationPathAndDecodesArray(t *testing.T) {

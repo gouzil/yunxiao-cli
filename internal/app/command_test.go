@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gouzi/yunxiao-cli/internal/auth"
-	"github.com/gouzi/yunxiao-cli/internal/config"
-	"github.com/gouzi/yunxiao-cli/internal/extension"
-	"github.com/gouzi/yunxiao-cli/internal/output"
-	"github.com/gouzi/yunxiao-cli/internal/terminal"
-	"github.com/gouzi/yunxiao-cli/internal/yunxiao"
+	"github.com/gouzil/yunxiao-cli/internal/auth"
+	"github.com/gouzil/yunxiao-cli/internal/config"
+	"github.com/gouzil/yunxiao-cli/internal/extension"
+	"github.com/gouzil/yunxiao-cli/internal/output"
+	"github.com/gouzil/yunxiao-cli/internal/terminal"
+	"github.com/gouzil/yunxiao-cli/internal/yunxiao"
 )
 
 func TestRepoListCommandUsesTypedService(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gouzi/yunxiao-cli/internal/api"
+	"github.com/gouzil/yunxiao-cli/internal/api"
 )
 
 type MergeRequestService interface {

@@ -12,11 +12,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/gouzi/yunxiao-cli/internal/api"
-	"github.com/gouzi/yunxiao-cli/internal/auth"
-	"github.com/gouzi/yunxiao-cli/internal/config"
-	"github.com/gouzi/yunxiao-cli/internal/output"
-	"github.com/gouzi/yunxiao-cli/internal/yunxiao"
+	"github.com/gouzil/yunxiao-cli/internal/api"
+	"github.com/gouzil/yunxiao-cli/internal/auth"
+	"github.com/gouzil/yunxiao-cli/internal/config"
+	"github.com/gouzil/yunxiao-cli/internal/output"
+	"github.com/gouzil/yunxiao-cli/internal/yunxiao"
 	"github.com/spf13/cobra"
 )
 

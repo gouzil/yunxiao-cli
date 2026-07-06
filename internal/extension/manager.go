@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gouzi/yunxiao-cli/internal/config"
-	"github.com/gouzi/yunxiao-cli/internal/terminal"
+	"github.com/gouzil/yunxiao-cli/internal/config"
+	"github.com/gouzil/yunxiao-cli/internal/terminal"
 )
 
 const localPathFile = ".local-path"
