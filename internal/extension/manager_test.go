@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -35,10 +36,16 @@ func TestNormalizeNameAndSource(t *testing.T) {
 
 func TestDefaultDirs(t *testing.T) {
 	dirs := DefaultDirs("/home/test", fakeEnv{EnvXDGData: "/xdg/data", EnvXDGState: "/xdg/state"})
-	if dirs.DataDir != filepath.Join("/xdg/data", "yunxiao", "extensions") {
+	wantDataDir := filepath.Join("/xdg/data", "yunxiao", "extensions")
+	wantStateDir := filepath.Join("/xdg/state", "yunxiao", "extensions")
+	if runtime.GOOS == "windows" {
+		wantDataDir = filepath.Join("/home/test", "AppData", "Local", "yunxiao", "extensions")
+		wantStateDir = filepath.Join("/home/test", "AppData", "Local", "yunxiao", "state", "extensions")
+	}
+	if dirs.DataDir != wantDataDir {
 		t.Fatalf("data dir = %q", dirs.DataDir)
 	}
-	if dirs.StateDir != filepath.Join("/xdg/state", "yunxiao", "extensions") {
+	if dirs.StateDir != wantStateDir {
 		t.Fatalf("state dir = %q", dirs.StateDir)
 	}
 	dirs = DefaultDirs("/home/test", fakeEnv{EnvConfigDir: "/cfg"})
@@ -53,7 +60,7 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 	if err := os.MkdirAll(source, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	executable := filepath.Join(source, "yunxiao-hello")
+	executable := filepath.Join(source, testExecutableName("yunxiao-hello"))
 	if err := os.WriteFile(executable, []byte("#!/usr/bin/env bash\necho hi\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +69,7 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 		Dirs:  Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
 		Env:   fakeEnv{"CI": "1"},
 		Exec:  exec,
-		GOOS:  "linux",
+		GOOS:  runtime.GOOS,
 		Clock: staticClock{},
 	})
 	ext, err := manager.InstallLocal(context.Background(), source)
@@ -97,7 +104,11 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 	if !handled {
 		t.Fatal("expected dispatch to handle extension")
 	}
-	if exec.executable != filepath.Join(manager.dirs.DataDir, "yunxiao-hello", "yunxiao-hello") {
+	wantExecutable := filepath.Join(manager.dirs.DataDir, "yunxiao-hello", testExecutableName("yunxiao-hello"))
+	if runtime.GOOS == "windows" {
+		wantExecutable = executable
+	}
+	if exec.executable != wantExecutable {
 		t.Fatalf("executable = %q", exec.executable)
 	}
 	if !reflect.DeepEqual(exec.args, []string{"--name", "world"}) {
@@ -131,7 +142,7 @@ func TestInstallRemoteUsesGitAndWritesManifest(t *testing.T) {
 		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
 		Git:  git,
 		Env:  fakeEnv{"CI": "1"},
-		GOOS: "linux",
+		GOOS: runtime.GOOS,
 	})
 	ext, err := manager.Install(context.Background(), InstallSource{Source: "https://example.test/yunxiao-remote.git", Ref: "v1"})
 	if err != nil {
@@ -212,7 +223,7 @@ func (f *fakeGitRunner) Run(ctx context.Context, dir string, args ...string) (st
 			f.t.Fatal(err)
 		}
 		full := filepath.Base(target)
-		if err := os.WriteFile(filepath.Join(target, full), []byte("#!/usr/bin/env bash\n"), 0o755); err != nil {
+		if err := os.WriteFile(filepath.Join(target, testExecutableName(full)), []byte("#!/usr/bin/env bash\n"), 0o755); err != nil {
 			f.t.Fatal(err)
 		}
 		return "", nil
@@ -240,4 +251,11 @@ func envValue(env []string, key string) string {
 		}
 	}
 	return ""
+}
+
+func testExecutableName(name string) string {
+	if runtime.GOOS == "windows" {
+		return name + ".exe"
+	}
+	return name
 }
