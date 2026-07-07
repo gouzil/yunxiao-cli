@@ -97,6 +97,16 @@ yunxiao team-report --since 7d
 
 扩展不会收到云效 PAT。扩展应调用 `yunxiao api`，由宿主 CLI 读取凭据并注入 HTTP 请求。
 
+## Agent Skill
+
+仓库内置了 `skills/yunxiao-cli`，用于让支持 agent skills 的工具通过本机 `yunxiao` 命令操作云效。使用 Skills CLI 安装：
+
+```sh
+npx skills add gouzil/yunxiao-cli --skill yunxiao-cli
+```
+
+安装后新开 agent 会话，直接提到云效 CLI、MR、流水线、工作项、搜索或在线冒烟检查时会自动触发；也可以显式使用 `$yunxiao-cli`。
+
 ## 文档
 
 - [命令参考](docs/command-reference.md)
