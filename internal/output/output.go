@@ -153,8 +153,23 @@ func SelectFields(value any, fields []string) (any, error) {
 	if len(fields) == 0 {
 		return normalized, nil
 	}
+	if items, ok := normalized.([]any); ok {
+		selected := make([]any, 0, len(items))
+		for _, item := range items {
+			selectedItem, err := selectObjectFields(item, fields)
+			if err != nil {
+				return nil, err
+			}
+			selected = append(selected, selectedItem)
+		}
+		return selected, nil
+	}
+	return selectObjectFields(normalized, fields)
+}
+
+func selectObjectFields(value any, fields []string) (map[string]any, error) {
 	selected := make(map[string]any, len(fields))
-	source, ok := normalized.(map[string]any)
+	source, ok := value.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("--json fields require object output")
 	}

@@ -42,7 +42,18 @@ func TestMergeRequestDetailUsesOrganizationRepositoryPath(t *testing.T) {
 		if r.URL.Path != "/oapi/v1/codeup/organizations/org-1/repositories/repo-1/changeRequests/1" {
 			t.Fatalf("path = %q", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"localId": 1, "mrBizId": "mr-1", "title": "test repo MR"})
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"localId":                1,
+			"mrBizId":                "mr-1",
+			"title":                  "test repo MR",
+			"allRequirementsPass":    true,
+			"conflictCheckStatus":    "NO_CONFLICT",
+			"totalCommentCount":      6,
+			"unResolvedCommentCount": 6,
+			"lastPipeline":           map[string]any{"status": "success"},
+			"webUrl":                 "https://codeup.aliyun.com/org-1/test-repo",
+			"detailUrl":              "https://codeup.aliyun.com/org-1/test-repo/change/1",
+		})
 	}))
 	defer server.Close()
 
@@ -53,6 +64,12 @@ func TestMergeRequestDetailUsesOrganizationRepositoryPath(t *testing.T) {
 	}
 	if result.MergeRequest.IID != "1" || result.MergeRequest.ID != "mr-1" {
 		t.Fatalf("merge request = %#v", result.MergeRequest)
+	}
+	if result.MergeRequest.Mergeable == nil || !*result.MergeRequest.Mergeable || result.MergeRequest.HasConflicts == nil || *result.MergeRequest.HasConflicts || result.MergeRequest.ReviewStatus != "6 unresolved comments" || result.MergeRequest.PipelineStatus != "success" {
+		t.Fatalf("merge request = %#v", result.MergeRequest)
+	}
+	if result.MergeRequest.WebURL != "https://codeup.aliyun.com/org-1/test-repo/change/1" {
+		t.Fatalf("web URL = %q", result.MergeRequest.WebURL)
 	}
 }
 
@@ -78,6 +95,8 @@ func TestCreateMergeRequestUsesCurrentPayload(t *testing.T) {
 			"title":        "test repo MR",
 			"sourceBranch": "feature",
 			"targetBranch": "master",
+			"webUrl":       "https://codeup.aliyun.com/org-1/test-repo",
+			"detailUrl":    "https://codeup.aliyun.com/org-1/test-repo/change/1",
 			"updateTime":   "2026-07-05T21:02:45+08:00",
 		})
 	}))
@@ -97,6 +116,9 @@ func TestCreateMergeRequestUsesCurrentPayload(t *testing.T) {
 	mr := result.MergeRequest
 	if mr.ID != "mr-biz-1" || mr.IID != "1" || mr.State != "UNDER_REVIEW" || mr.UpdatedAt == "" {
 		t.Fatalf("merge request = %#v", mr)
+	}
+	if mr.WebURL != "https://codeup.aliyun.com/org-1/test-repo/change/1" {
+		t.Fatalf("web URL = %q", mr.WebURL)
 	}
 }
 

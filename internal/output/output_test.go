@@ -2,6 +2,7 @@ package output
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 )
 
@@ -14,6 +15,23 @@ func TestSelectFieldsRejectsUnknownField(t *testing.T) {
 	_, err := SelectFields(sampleValue{ID: "1", Name: "api"}, []string{"missing"})
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestSelectFieldsAppliesToObjectSlices(t *testing.T) {
+	got, err := SelectFields([]sampleValue{
+		{ID: "1", Name: "api"},
+		{ID: "2", Name: "cli"},
+	}, []string{"id"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != `[{"id":"1"},{"id":"2"}]` {
+		t.Fatalf("selected fields = %s", body)
 	}
 }
 

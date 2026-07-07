@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -42,6 +43,32 @@ func TestRepoListAllowsMissingOrganization(t *testing.T) {
 	}
 	if !service.listRepositoriesCalled {
 		t.Fatal("repository service was not called")
+	}
+}
+
+func TestRepoListJSONAllowsRepositoryFields(t *testing.T) {
+	service := &fakeCommandService{}
+	root, out := newCommandTestRoot(t, yunxiao.ServiceSet{Repo: service})
+
+	err := root.Execute(context.Background(), []string{"repo", "list", "-q", "api", "--json", "id,name,path,webUrl,defaultBranch"})
+	if err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	if service.listRepositoriesRequest.Options.Query != "api" {
+		t.Fatalf("query = %q", service.listRepositoriesRequest.Options.Query)
+	}
+	var repositories []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &repositories); err != nil {
+		t.Fatalf("output is not a repository array: %v\n%s", err, out.String())
+	}
+	if len(repositories) == 0 {
+		t.Fatal("expected repositories")
+	}
+	if repositories[0]["id"] != "repo-1" || repositories[0]["name"] != "api" || repositories[0]["path"] != "cro/api" || repositories[0]["defaultBranch"] != "master" {
+		t.Fatalf("repository = %#v", repositories[0])
+	}
+	if _, ok := repositories[0]["repositories"]; ok {
+		t.Fatalf("unexpected top-level field in item output: %#v", repositories[0])
 	}
 }
 
@@ -202,6 +229,18 @@ func TestMRListCommandUsesDefaultRepo(t *testing.T) {
 		t.Fatalf("repository = %q", service.listMergeRequestsRequest.RepositoryID)
 	}
 	if !strings.Contains(out.String(), "Add CLI") {
+		t.Fatalf("output = %q", out.String())
+	}
+}
+
+func TestMRDiffJSONCanIncludeMergeRequest(t *testing.T) {
+	service := &fakeCommandService{}
+	root, out := newCommandTestRoot(t, yunxiao.ServiceSet{Repo: service, MR: service})
+
+	if err := root.Execute(context.Background(), []string{"mr", "diff", "3", "--json", "mergeRequest,meta"}); err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	if !strings.Contains(out.String(), `"mergeRequest"`) || !strings.Contains(out.String(), `"title": "Add CLI"`) {
 		t.Fatalf("output = %q", out.String())
 	}
 }

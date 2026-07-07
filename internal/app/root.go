@@ -134,6 +134,15 @@ func (r *Root) renderOptions() output.Options {
 	}
 }
 
+func jsonFieldRequested(fields []string, name string) bool {
+	for _, field := range fields {
+		if field == name {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Root) resolvedConfig() (config.Resolved, error) {
 	return r.configStore.Resolve(config.Values{
 		Endpoint:     r.flags.Endpoint,

@@ -43,7 +43,12 @@ func (r *Root) newRepoListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return r.renderer.Render(result, output.RepositoryTable(result.Repositories), r.renderOptions())
+			options := r.renderOptions()
+			value := any(result)
+			if len(options.JSONFields) > 0 && !jsonFieldRequested(options.JSONFields, "repositories") && !jsonFieldRequested(options.JSONFields, "meta") {
+				value = result.Repositories
+			}
+			return r.renderer.Render(value, output.RepositoryTable(result.Repositories), options)
 		},
 	}
 	addListFlags(cmd, &options)
