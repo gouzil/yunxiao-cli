@@ -8,17 +8,51 @@ Yunxiao CLI 是面向云效 OpenAPI 的命令行客户端。它保留接近 GitH
 
 需要 Go `1.25.8` 或更高版本。
 
+直接从 Git 仓库安装到 `$GOBIN` 或 `$GOPATH/bin`：
+
+```sh
+go install github.com/gouzil/yunxiao-cli/cmd/yunxiao@latest
+```
+
+安装后确认 `yunxiao` 所在目录已经加入 `PATH`：
+
+```sh
+yunxiao --help
+```
+
+只在当前仓库构建本地二进制：
+
 ```sh
 go build -o bin/yunxiao ./cmd/yunxiao
 ```
 
-构建多平台产物：
+构建多平台开发产物：
 
 ```sh
 ./scripts/build.sh
 ```
 
 产物会写入 `dist/`，文件名形如 `yunxiao-darwin-arm64`、`yunxiao-linux-amd64` 和 `yunxiao-windows-amd64.exe`。
+
+`scripts/build.sh` 只作为本地开发入口，不创建 GitHub Release，也不生成正式 checksum。
+
+## 发布
+
+正式发布只通过 `v*` tag 触发 GitHub Actions：
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Release workflow 会运行 GoReleaser，构建 Darwin amd64、Darwin arm64、Linux amd64、Linux arm64 和 Windows amd64 归档，并把产物和 `checksums.txt` 上传到对应的 GitHub Release。GitHub Release 是正式产物下载位置；下载后可用 `checksums.txt` 校验归档完整性。
+
+发布前可以在本地做配置和 snapshot 检查：
+
+```sh
+goreleaser check
+goreleaser release --snapshot --clean
+```
 
 ## 快速开始
 

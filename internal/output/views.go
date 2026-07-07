@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gouzi/yunxiao-cli/internal/auth"
-	"github.com/gouzi/yunxiao-cli/internal/config"
-	"github.com/gouzi/yunxiao-cli/internal/yunxiao"
+	"github.com/gouzil/yunxiao-cli/internal/auth"
+	"github.com/gouzil/yunxiao-cli/internal/config"
+	"github.com/gouzil/yunxiao-cli/internal/yunxiao"
 )
 
 func AuthStatus(endpoint string, credential auth.Credential, loggedIn bool) Detail {

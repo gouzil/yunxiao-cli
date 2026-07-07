@@ -3,8 +3,8 @@ package yunxiao
 import (
 	"context"
 
-	"github.com/gouzi/yunxiao-cli/internal/api"
-	"github.com/gouzi/yunxiao-cli/internal/auth"
+	"github.com/gouzil/yunxiao-cli/internal/api"
+	"github.com/gouzil/yunxiao-cli/internal/auth"
 )
 
 type AuthService interface {

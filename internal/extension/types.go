@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/gouzi/yunxiao-cli/internal/terminal"
+	"github.com/gouzil/yunxiao-cli/internal/terminal"
 )
 
 const (

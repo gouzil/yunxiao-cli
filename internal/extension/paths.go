@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/gouzi/yunxiao-cli/internal/config"
+	"github.com/gouzil/yunxiao-cli/internal/config"
 )
 
 const (

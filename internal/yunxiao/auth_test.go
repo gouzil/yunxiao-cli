@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gouzi/yunxiao-cli/internal/api"
+	"github.com/gouzil/yunxiao-cli/internal/api"
 )
 
 func TestGetUserByTokenUsesDocumentedPlatformUserEndpoint(t *testing.T) {

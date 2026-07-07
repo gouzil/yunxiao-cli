@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gouzi/yunxiao-cli/internal/api"
+	"github.com/gouzil/yunxiao-cli/internal/api"
 )
 
 func TestLoginSavesTokenWhenUserLookupIsForbidden(t *testing.T) {

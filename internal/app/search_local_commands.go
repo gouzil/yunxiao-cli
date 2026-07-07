@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gouzi/yunxiao-cli/internal/browser"
-	"github.com/gouzi/yunxiao-cli/internal/config"
-	"github.com/gouzi/yunxiao-cli/internal/output"
-	"github.com/gouzi/yunxiao-cli/internal/yunxiao"
+	"github.com/gouzil/yunxiao-cli/internal/browser"
+	"github.com/gouzil/yunxiao-cli/internal/config"
+	"github.com/gouzil/yunxiao-cli/internal/output"
+	"github.com/gouzil/yunxiao-cli/internal/yunxiao"
 	"github.com/spf13/cobra"
 )
 
