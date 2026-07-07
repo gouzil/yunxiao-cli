@@ -65,47 +65,58 @@ func (m *MergeRequest) UnmarshalJSON(data []byte) error {
 		Author:          raw.Author.Name,
 		SourceBranch:    raw.SourceBranch,
 		TargetBranch:    raw.TargetBranch,
-		ReviewStatus:    raw.ReviewStatus,
-		Mergeable:       raw.Mergeable,
-		HasConflicts:    firstBool(raw.HasConflicts, raw.HasConflict),
-		PipelineStatus:  raw.PipelineStatus,
+		ReviewStatus:    first(raw.ReviewStatus, reviewSummary(raw.UnResolvedCommentCount, raw.TotalCommentCount, raw.Reviewers)),
+		Mergeable:       firstBool(raw.Mergeable, raw.AllRequirementsPass),
+		HasConflicts:    firstBool(raw.HasConflicts, raw.HasConflict, conflictCheckStatusBool(raw.ConflictCheckStatus)),
+		PipelineStatus:  first(raw.PipelineStatus, raw.LastPipeline.Status, raw.LastPipeline.PipelineStatus),
 		Labels:          raw.Labels,
-		WebURL:          first(raw.WebURL, raw.DetailURL),
+		WebURL:          first(raw.DetailURL, raw.WebURL),
 		UpdatedAt:       first(raw.UpdatedAt, raw.UpdateTime),
 	}
 	return nil
 }
 
 type mergeRequestJSON struct {
-	ID              string             `json:"id"`
-	IID             string             `json:"iid"`
-	LocalID         flexibleString     `json:"localId"`
-	BizID           string             `json:"bizId"`
-	MRBizID         string             `json:"mrBizId"`
-	ProjectID       flexibleString     `json:"projectId"`
-	SourceProjectID flexibleString     `json:"sourceProjectId"`
-	TargetProjectID flexibleString     `json:"targetProjectId"`
-	Title           string             `json:"title"`
-	Description     string             `json:"description"`
-	State           string             `json:"state"`
-	Status          string             `json:"status"`
-	Author          mergeRequestAuthor `json:"author"`
-	SourceBranch    string             `json:"sourceBranch"`
-	TargetBranch    string             `json:"targetBranch"`
-	ReviewStatus    string             `json:"reviewStatus"`
-	Mergeable       *bool              `json:"mergeable"`
-	HasConflicts    *bool              `json:"hasConflicts"`
-	HasConflict     *bool              `json:"hasConflict"`
-	PipelineStatus  string             `json:"pipelineStatus"`
-	Labels          []string           `json:"labels"`
-	WebURL          string             `json:"webUrl"`
-	DetailURL       string             `json:"detailUrl"`
-	UpdatedAt       string             `json:"updatedAt"`
-	UpdateTime      string             `json:"updateTime"`
+	ID                     string               `json:"id"`
+	IID                    string               `json:"iid"`
+	LocalID                flexibleString       `json:"localId"`
+	BizID                  string               `json:"bizId"`
+	MRBizID                string               `json:"mrBizId"`
+	ProjectID              flexibleString       `json:"projectId"`
+	SourceProjectID        flexibleString       `json:"sourceProjectId"`
+	TargetProjectID        flexibleString       `json:"targetProjectId"`
+	Title                  string               `json:"title"`
+	Description            string               `json:"description"`
+	State                  string               `json:"state"`
+	Status                 string               `json:"status"`
+	Author                 mergeRequestAuthor   `json:"author"`
+	SourceBranch           string               `json:"sourceBranch"`
+	TargetBranch           string               `json:"targetBranch"`
+	ReviewStatus           string               `json:"reviewStatus"`
+	Mergeable              *bool                `json:"mergeable"`
+	AllRequirementsPass    *bool                `json:"allRequirementsPass"`
+	HasConflicts           *bool                `json:"hasConflicts"`
+	HasConflict            *bool                `json:"hasConflict"`
+	ConflictCheckStatus    string               `json:"conflictCheckStatus"`
+	PipelineStatus         string               `json:"pipelineStatus"`
+	LastPipeline           mergeRequestPipeline `json:"lastPipeline"`
+	Labels                 []string             `json:"labels"`
+	WebURL                 string               `json:"webUrl"`
+	DetailURL              string               `json:"detailUrl"`
+	UpdatedAt              string               `json:"updatedAt"`
+	UpdateTime             string               `json:"updateTime"`
+	TotalCommentCount      int                  `json:"totalCommentCount"`
+	UnResolvedCommentCount int                  `json:"unResolvedCommentCount"`
+	Reviewers              []mergeRequestAuthor `json:"reviewers"`
 }
 
 type mergeRequestAuthor struct {
 	Name string `json:"name"`
+}
+
+type mergeRequestPipeline struct {
+	Status         string `json:"status"`
+	PipelineStatus string `json:"pipelineStatus"`
 }
 
 func (a *mergeRequestAuthor) UnmarshalJSON(data []byte) error {
@@ -296,8 +307,9 @@ type MergeRequestResult struct {
 }
 
 type MergeRequestDiffResult struct {
-	Diff string           `json:"diff"`
-	Meta api.ResponseMeta `json:"meta"`
+	Diff         string           `json:"diff"`
+	MergeRequest MergeRequest     `json:"mergeRequest"`
+	Meta         api.ResponseMeta `json:"meta"`
 }
 
 type MergeRequestFileListResult struct {
@@ -686,6 +698,30 @@ func firstBool(values ...*bool) *bool {
 		}
 	}
 	return nil
+}
+
+func conflictCheckStatusBool(value string) *bool {
+	switch strings.ToUpper(value) {
+	case "NO_CONFLICT":
+		return BoolPtr(false)
+	case "CONFLICT", "HAS_CONFLICT":
+		return BoolPtr(true)
+	default:
+		return nil
+	}
+}
+
+func reviewSummary(unresolved int, total int, reviewers []mergeRequestAuthor) string {
+	switch {
+	case unresolved > 0:
+		return fmt.Sprintf("%d unresolved comments", unresolved)
+	case total > 0:
+		return "all comments resolved"
+	case len(reviewers) > 0:
+		return fmt.Sprintf("%d reviewers", len(reviewers))
+	default:
+		return ""
+	}
 }
 
 func rawBool(value json.RawMessage) bool {

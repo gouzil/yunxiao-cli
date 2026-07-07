@@ -8,6 +8,7 @@
 - 空列表命令输出 `No <resource> found.`
 - 详情命令输出标题和稳定字段名。
 - `--json <fields>` 接收逗号分隔的 camelCase JSON 字段，字段来自类型化结果。
+- `repo list --json id,name,path,webUrl,defaultBranch` 会按仓库条目输出数组；如需响应包装和分页元数据，使用 `--json repositories,meta`。
 - `--jq <expr>` 只会在 `--json` 之后执行。
 - `--template <tmpl>` 使用类型化结果值执行 Go template。
 - token 和凭据在展示前会被脱敏。

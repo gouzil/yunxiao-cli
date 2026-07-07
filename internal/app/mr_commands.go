@@ -158,11 +158,19 @@ func (r *Root) newMRDiffCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			options := r.renderOptions()
 			result, err := r.services.MR.GetMergeRequestDiff(cmd.Context(), yunxiao.GetMergeRequestDiffRequest{Organization: organization, RepositoryID: repo, MergeRequestID: args[0], Version: version})
 			if err != nil {
 				return err
 			}
-			return r.renderer.RenderText(result, result.Diff, r.renderOptions())
+			if jsonFieldRequested(options.JSONFields, "mergeRequest") {
+				mr, err := r.services.MR.GetMergeRequest(cmd.Context(), yunxiao.GetMergeRequestRequest{Organization: organization, RepositoryID: repo, MergeRequestID: args[0]})
+				if err != nil {
+					return err
+				}
+				result.MergeRequest = mr.MergeRequest
+			}
+			return r.renderer.RenderText(result, result.Diff, options)
 		},
 	}
 	cmd.Flags().StringVar(&version, "version", "", "Merge request version")
