@@ -12,5 +12,5 @@
 ## 3. fixture 质量门禁与 CI
 
 - [x] 3.1 更新 `.pre-commit-config.yaml`，让 Shell/Go fixture 进入现有 `shfmt`/`gofmt`，并以固定版本增加 Python 的 Ruff format/check 和 Node.js 的 Prettier check
-- [x] 3.2 更新 `.github/workflows/ci.yml`，在 Linux、macOS 和 Windows 都显式配置 Python 和 Node.js 主版本，并统一运行 `go test -tags=acceptance ./...`；Linux 继续运行 fixture 语法和静态检查
+- [x] 3.2 更新 `.github/workflows/ci.yml`，在 Linux、macOS 和 Windows 都显式配置 Python 和 Node.js 主版本，并统一运行 `go test -tags=acceptance ./...`；将 fixture 格式、语法和静态检查集中到 `.github/workflows/fmt.yml`
 - [x] 3.3 运行 `prek run --all-files`、默认 `go test ./...`、带 tag 的目标多语言测试、Windows acceptance 交叉编译、`go vet ./...` 和 `openspec validate test-extension-language-compatibility --strict`，确认默认单测不报告兼容性测试跳过、fixture 可格式化检查、临时产物不写入工作区且全部检查通过

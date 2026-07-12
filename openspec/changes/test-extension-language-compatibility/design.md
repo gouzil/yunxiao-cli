@@ -23,8 +23,8 @@ test/extensions/
 .pre-commit-config.yaml              # fixture 格式化与静态检查
 
 .github/workflows/
-├── fmt.yml                          # 复用 prek 执行格式检查
-└── ci.yml                           # 三平台准备运行时并执行兼容性测试
+├── fmt.yml                          # 复用 prek 并执行 fixture 质量检查
+└── ci.yml                           # 三平台准备运行时并执行 acceptance
 
 $TMPDIR/                             # 由 t.TempDir() 管理，不进入仓库
 ├── sources/yunxiao-<language>/      # 已提交 fixture 的运行副本
@@ -60,7 +60,7 @@ Shell、Python、Node.js 和 Go 源码分别提交到 `test/extensions/yunxiao-<
 
 ### 2. fixture 使用语言原生或现有工具检查
 
-`.pre-commit-config.yaml` 继续作为格式化入口：现有 `shfmt` 和 `gofmt` 直接覆盖 Shell 与 Go；新增 Ruff 的 format/check 覆盖 Python，新增 Prettier check 覆盖 Node.js。CI 再执行不修改文件的语法/静态检查：`bash -n`、Ruff check、`node --check` 和 Go vet/build。工具版本固定在 pre-commit hook 或 setup action 中，避免依赖开发机全局版本。
+`.pre-commit-config.yaml` 继续作为格式化入口：现有 `shfmt` 和 `gofmt` 直接覆盖 Shell 与 Go；新增 Ruff 的 format/check 覆盖 Python，新增 Prettier check 覆盖 Node.js。`fmt.yml` 复用 `prek` 完成这些检查，再执行 `bash -n`、`node --check` 和 Go vet/build；`ci.yml` 只负责三平台 acceptance、仓库 vet 和 CLI build。工具版本固定在 pre-commit hook 或 setup action 中，避免依赖开发机全局版本。
 
 不引入 pytest、npm 应用脚手架、ESLint 配置或嵌套 Go module。fixture 没有业务依赖：Python 用标准库，Node.js 用内置模块，Go 直接属于主 module；这些额外工程文件不会提升本次兼容性证据。
 

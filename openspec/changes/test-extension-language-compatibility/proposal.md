@@ -22,6 +22,6 @@
 
 ## Impact
 
-- 新增 `test/extensions/yunxiao-{shell,python,node,go}/` 源码和 `internal/extension/language_compatibility_test.go`，并更新 `.pre-commit-config.yaml` 与 `.github/workflows/ci.yml`。
+- 新增 `test/extensions/yunxiao-{shell,python,node,go}/` 源码和 `internal/extension/language_compatibility_test.go`，并更新 `.pre-commit-config.yaml`、`.github/workflows/fmt.yml` 与 `.github/workflows/ci.yml`。
 - 不修改公开 CLI 命令或扩展清单格式，不引入生产依赖；Windows 入口发现补齐无后缀脚本兼容性。
 - CI 需要可用的 Bash、Python、Node.js 与 Go；运行测试时只在 `t.TempDir()` 下创建副本、安装数据、状态和 Go 编译产物，不修改已提交的 fixture 源码。

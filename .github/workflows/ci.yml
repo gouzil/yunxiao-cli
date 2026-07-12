@@ -33,15 +33,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check extension fixtures
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          python -m pip install ruff==0.12.2
-          bash -n test/extensions/yunxiao-shell/yunxiao-shell
-          ruff check test/extensions/yunxiao-python/yunxiao-python
-          node --check test/extensions/yunxiao-node/yunxiao-node
-          go vet ./test/extensions/yunxiao-go
-          go build -o "$RUNNER_TEMP/yunxiao-go" ./test/extensions/yunxiao-go
       - name: Acceptance test extension language compatibility
         run: go test -tags=acceptance ./...
       - name: Vet
