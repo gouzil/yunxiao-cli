@@ -343,10 +343,11 @@ func (m *LocalManager) upgradeOne(ctx context.Context, ext Extension, force bool
 	}
 	commit, _ := m.git.Run(ctx, dir, "rev-parse", "HEAD")
 	ext.CurrentCommit = strings.TrimSpace(commit)
-	ext.ExecutablePath = filepath.Join(dir, m.executableName(ext.FullName))
-	if err := requireExecutable(ext.ExecutablePath, m.goos); err != nil {
+	executablePath, err := m.resolveExecutable(dir, ext.FullName)
+	if err != nil {
 		return err
 	}
+	ext.ExecutablePath = executablePath
 	if err := m.writeManifest(dir, ext); err != nil {
 		return err
 	}

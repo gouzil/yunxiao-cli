@@ -223,6 +223,38 @@ func TestInstallRemoteUsesGitAndWritesManifest(t *testing.T) {
 	}
 }
 
+func TestUpgradeWindowsAcceptsScriptEntry(t *testing.T) {
+	dir := t.TempDir()
+	targetDir := filepath.Join(dir, "data", "yunxiao-script")
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	scriptPath := filepath.Join(targetDir, "yunxiao-script")
+	if err := os.WriteFile(scriptPath, []byte("#!/usr/bin/env bash\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manager := NewManager(Options{
+		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
+		Git:  &fakeGitRunner{t: t},
+		GOOS: "windows",
+	})
+	ext := Extension{Name: "script", FullName: "yunxiao-script", Kind: KindGit, ExecutablePath: scriptPath}
+	if err := manager.writeManifest(targetDir, ext); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := manager.Upgrade(context.Background(), "script", false); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := manager.readInstalled("yunxiao-script")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.ExecutablePath != scriptPath {
+		t.Fatalf("executable path = %q, want %q", updated.ExecutablePath, scriptPath)
+	}
+}
+
 func TestCreateTemplates(t *testing.T) {
 	dir := t.TempDir()
 	manager := NewManager(Options{Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")}, Env: fakeEnv{"CI": "1"}})
