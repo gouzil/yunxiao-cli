@@ -2,7 +2,7 @@
 
 - [x] 1.1 在 `test/extensions/yunxiao-{shell,python,node,go}/` 提交四种最小扩展源码，入口实现同一组参数、环境和标准流标记，不增加第三方运行时依赖
 - [x] 1.2 新建 `internal/extension/language_compatibility_test.go`；将 fixture 复制到单个 `t.TempDir()` 的 `sources/`，在临时目录编译 Go 入口，并使用临时 `data/` 和 `state/`
-- [x] 1.3 参考 `cli/cli` 的 build-tag 测试分层增加表驱动兼容性测试；`integration && !windows` 层检查 Bash、Python、Node.js 和 Go，使用真实 `LocalManager` 与 `RealExecRunner` 安装和分发，不在默认单测中使用环境变量 `t.Skip`，任一运行时缺失或统一契约断言失败即报错
+- [x] 1.3 严格参考 `cli/cli` 的 build-tag 测试分层增加表驱动兼容性测试；`acceptance` 层检查 Bash、Python、Node.js 和 Go，使用真实 `LocalManager` 与 `RealExecRunner` 安装和分发，不使用 `!windows` 编译排除或环境变量 `t.Skip`，任一运行时缺失或统一契约断言失败即报错
 
 ## 2. 凭据与 API 契约边界
 
@@ -12,5 +12,5 @@
 ## 3. fixture 质量门禁与 CI
 
 - [x] 3.1 更新 `.pre-commit-config.yaml`，让 Shell/Go fixture 进入现有 `shfmt`/`gofmt`，并以固定版本增加 Python 的 Ruff format/check 和 Node.js 的 Prettier check
-- [x] 3.2 更新 `.github/workflows/ci.yml` 的 Linux job，显式配置 Python 和 Node.js 主版本，运行 `bash -n`、Ruff check、`node --check`、Go vet/build，并通过 `go test -tags=integration ./...` 启用四语言兼容性测试；其他平台保持默认测试路径
+- [x] 3.2 更新 `.github/workflows/ci.yml` 的 Linux job，显式配置 Python 和 Node.js 主版本，运行 `bash -n`、Ruff check、`node --check`、Go vet/build，并通过 `go test -tags=acceptance ./...` 启用四语言兼容性测试；其他平台保持默认测试路径
 - [x] 3.3 运行 `prek run --all-files`、默认 `go test ./...`、带 tag 的目标多语言测试、`go vet ./...` 和 `openspec validate test-extension-language-compatibility --strict`，确认默认单测不报告兼容性测试跳过、fixture 可格式化检查、临时产物不写入工作区且全部检查通过

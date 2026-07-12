@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: 代表性语言兼容性矩阵
-项目 MUST 提供带 `integration` build tag 的自动化兼容性测试，使用 Shell、Python、Node.js 和 Go 实现的真实扩展入口覆盖解释型脚本与编译型二进制，并通过生产使用的本地安装和进程分发路径执行这些入口；默认单元测试 MUST NOT 通过运行时环境变量把该测试报告为跳过。
+项目 MUST 严格参考 `cli/cli` 的测试分层，提供带 `acceptance` build tag 的自动化兼容性测试，使用 Shell、Python、Node.js 和 Go 实现的真实扩展入口覆盖解释型脚本与编译型二进制，并通过生产使用的本地安装和进程分发路径执行这些入口；默认单元测试 MUST NOT 通过运行时环境变量把该测试报告为跳过。
 
 #### Scenario: 四种入口完成本地安装与执行
 - **WHEN** 兼容性测试为 Shell、Python、Node.js 和 Go 分别创建符合 `yunxiao-<name>` 命名约定的可执行入口
@@ -34,14 +34,14 @@
 - **THEN** 它使用现有 API 命令测试验证宿主鉴权及 stdout/stderr 边界，不要求四种语言 fixture 各自启动 HTTP 测试服务
 
 ### Requirement: CI 确定性执行
-CI MUST 在一个明确的平台任务中提供并执行多语言测试所需的 Bash、Python、Node.js 和 Go 运行时，并通过 `go test -tags=integration ./...` 纳入完整矩阵；缺少任一声明运行时 MUST 导致失败。
+CI MUST 在 Linux acceptance 步骤提供并执行多语言测试所需的 Bash、Python、Node.js 和 Go 运行时，并通过 `go test -tags=acceptance ./...` 纳入完整矩阵；缺少任一声明运行时 MUST 导致失败。
 
 #### Scenario: Linux CI 运行完整语言矩阵
 - **WHEN** Linux CI job 执行测试
-- **THEN** CI 显式准备 Python 与 Node.js、复用已配置的 Go 和 Bash，并使用 `integration` build tag 运行完整四语言兼容性测试
+- **THEN** CI 显式准备 Python 与 Node.js、复用已配置的 Go 和 Bash，并使用 `acceptance` build tag 运行完整四语言兼容性测试
 
 #### Scenario: 必需运行时缺失
-- **WHEN** 使用 `integration` build tag 运行多语言兼容性测试但找不到任一声明运行时
+- **WHEN** 使用 `acceptance` build tag 运行多语言兼容性测试但找不到任一声明运行时
 - **THEN** 测试失败并指出缺失的运行时，而不是跳过对应语言后报告成功
 
 ### Requirement: 测试资产保持临时和隔离
