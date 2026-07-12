@@ -114,11 +114,17 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 	if !reflect.DeepEqual(exec.args, []string{"--name", "world"}) {
 		t.Fatalf("args = %#v", exec.args)
 	}
-	if envValue(exec.env, "YUNXIAO_REPO") != "repo" {
-		t.Fatalf("env = %#v", exec.env)
+	wantEnv := []string{
+		"YUNXIAO_EXTENSION=1",
+		"YUNXIAO_EXTENSION_NAME=hello",
+		"YUNXIAO_EXTENSION_DIR=" + source,
+		"YUNXIAO_ENDPOINT=endpoint",
+		"YUNXIAO_ORGANIZATION=org",
+		"YUNXIAO_PROJECT=project",
+		"YUNXIAO_REPO=repo",
 	}
-	if envValue(exec.env, "YUNXIAO_TOKEN") != "" {
-		t.Fatalf("token leaked into env: %#v", exec.env)
+	if !reflect.DeepEqual(exec.env, wantEnv) {
+		t.Fatalf("env = %#v, want %#v", exec.env, wantEnv)
 	}
 	if err := manager.Remove("hello"); err != nil {
 		t.Fatal(err)
@@ -132,6 +138,64 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 	}
 	if _, err := os.Stat(source); err != nil {
 		t.Fatalf("local source was removed: %v", err)
+	}
+}
+
+func TestInstallLocalWindowsAcceptsScriptEntry(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "yunxiao-script")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(source, "yunxiao-script")
+	if err := os.WriteFile(entry, []byte("#!/usr/bin/env bash\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	exec := &fakeExecRunner{}
+	manager := NewManager(Options{
+		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
+		Env:  fakeEnv{"CI": "1"},
+		Exec: exec,
+		GOOS: "windows",
+	})
+	if _, err := manager.InstallLocal(context.Background(), source); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.Dispatch(context.Background(), DispatchRequest{Name: "script", IO: terminal.IOStreams{}}); err != nil {
+		t.Fatal(err)
+	}
+	if exec.executable != entry {
+		t.Fatalf("executable = %q, want %q", exec.executable, entry)
+	}
+}
+
+func TestInstallLocalWindowsPrefersBinaryEntry(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "yunxiao-binary")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"yunxiao-binary", "yunxiao-binary.exe"} {
+		if err := os.WriteFile(filepath.Join(source, name), nil, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exec := &fakeExecRunner{}
+	manager := NewManager(Options{
+		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
+		Env:  fakeEnv{"CI": "1"},
+		Exec: exec,
+		GOOS: "windows",
+	})
+	if _, err := manager.InstallLocal(context.Background(), source); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.Dispatch(context.Background(), DispatchRequest{Name: "binary", IO: terminal.IOStreams{}}); err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(source, "yunxiao-binary.exe")
+	if exec.executable != want {
+		t.Fatalf("executable = %q, want %q", exec.executable, want)
 	}
 }
 
@@ -156,6 +220,38 @@ func TestInstallRemoteUsesGitAndWritesManifest(t *testing.T) {
 	}
 	if !git.seen("checkout v1") {
 		t.Fatalf("git commands = %#v", git.commands)
+	}
+}
+
+func TestUpgradeWindowsAcceptsScriptEntry(t *testing.T) {
+	dir := t.TempDir()
+	targetDir := filepath.Join(dir, "data", "yunxiao-script")
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	scriptPath := filepath.Join(targetDir, "yunxiao-script")
+	if err := os.WriteFile(scriptPath, []byte("#!/usr/bin/env bash\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manager := NewManager(Options{
+		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
+		Git:  &fakeGitRunner{t: t},
+		GOOS: "windows",
+	})
+	ext := Extension{Name: "script", FullName: "yunxiao-script", Kind: KindGit, ExecutablePath: scriptPath}
+	if err := manager.writeManifest(targetDir, ext); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := manager.Upgrade(context.Background(), "script", false); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := manager.readInstalled("yunxiao-script")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.ExecutablePath != scriptPath {
+		t.Fatalf("executable path = %q, want %q", updated.ExecutablePath, scriptPath)
 	}
 }
 
@@ -241,16 +337,6 @@ func (f *fakeGitRunner) seen(prefix string) bool {
 		}
 	}
 	return false
-}
-
-func envValue(env []string, key string) string {
-	prefix := key + "="
-	for _, value := range env {
-		if strings.HasPrefix(value, prefix) {
-			return strings.TrimPrefix(value, prefix)
-		}
-	}
-	return ""
 }
 
 func testExecutableName(name string) string {

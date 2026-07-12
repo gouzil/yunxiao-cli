@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -eu
+
+printf 'args=%s\n' "$(
+	IFS='|'
+	printf '%s' "$*"
+)"
+for name in \
+	YUNXIAO_EXTENSION \
+	YUNXIAO_EXTENSION_NAME \
+	YUNXIAO_EXTENSION_DIR \
+	YUNXIAO_ENDPOINT \
+	YUNXIAO_ORGANIZATION \
+	YUNXIAO_PROJECT \
+	YUNXIAO_REPO; do
+	printf '%s=%s\n' "$name" "${!name-}"
+done
+printf 'stderr=shell\n' >&2

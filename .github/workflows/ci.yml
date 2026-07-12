@@ -25,8 +25,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Test
-        run: go test ./...
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Acceptance test extension language compatibility
+        run: go test -tags=acceptance ./...
       - name: Vet
         run: go vet ./...
       - name: Build

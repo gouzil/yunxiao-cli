@@ -17,7 +17,17 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Run prek
         uses: j178/prek-action@v2
         with:
           extra-args: --all-files
+      - name: Check extension fixtures
+        run: |
+          bash -n test/extensions/yunxiao-shell/yunxiao-shell
+          node --check test/extensions/yunxiao-node/yunxiao-node
+          go vet ./test/extensions/yunxiao-go
+          go build -o "$RUNNER_TEMP/yunxiao-go" ./test/extensions/yunxiao-go

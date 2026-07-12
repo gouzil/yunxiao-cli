@@ -127,8 +127,8 @@ func (m *LocalManager) InstallLocal(ctx context.Context, dir string) (Extension,
 	if err != nil {
 		return Extension{}, err
 	}
-	sourceExecutable := filepath.Join(abs, m.executableName(full))
-	if err := requireExecutable(sourceExecutable, m.goos); err != nil {
+	sourceExecutable, err := m.resolveExecutable(abs, full)
+	if err != nil {
 		return Extension{}, err
 	}
 	targetDir := filepath.Join(m.dirs.DataDir, full)
@@ -293,8 +293,8 @@ func (m *LocalManager) installGit(ctx context.Context, source InstallSource) (Ex
 			return Extension{}, err
 		}
 	}
-	executablePath := filepath.Join(cloneDir, m.executableName(full))
-	if err := requireExecutable(executablePath, m.goos); err != nil {
+	executablePath, err := m.resolveExecutable(cloneDir, full)
+	if err != nil {
 		return Extension{}, err
 	}
 	commit, _ := m.git.Run(ctx, cloneDir, "rev-parse", "HEAD")
@@ -308,7 +308,7 @@ func (m *LocalManager) installGit(ctx context.Context, source InstallSource) (Ex
 		Name:           short,
 		FullName:       full,
 		Kind:           KindGit,
-		ExecutablePath: filepath.Join(targetDir, m.executableName(full)),
+		ExecutablePath: filepath.Join(targetDir, filepath.Base(executablePath)),
 		SourceURL:      source.Source,
 		SourceRef:      strings.TrimSpace(source.Ref),
 		CurrentCommit:  strings.TrimSpace(commit),
@@ -343,10 +343,11 @@ func (m *LocalManager) upgradeOne(ctx context.Context, ext Extension, force bool
 	}
 	commit, _ := m.git.Run(ctx, dir, "rev-parse", "HEAD")
 	ext.CurrentCommit = strings.TrimSpace(commit)
-	ext.ExecutablePath = filepath.Join(dir, m.executableName(ext.FullName))
-	if err := requireExecutable(ext.ExecutablePath, m.goos); err != nil {
+	executablePath, err := m.resolveExecutable(dir, ext.FullName)
+	if err != nil {
 		return err
 	}
+	ext.ExecutablePath = executablePath
 	if err := m.writeManifest(dir, ext); err != nil {
 		return err
 	}
@@ -358,9 +359,6 @@ func (m *LocalManager) readInstalled(full string) (Extension, error) {
 	ext, err := readManifest(filepath.Join(dir, ManifestName))
 	if err != nil {
 		return Extension{}, err
-	}
-	if ext.Kind == KindLocal && m.goos == "windows" && ext.LocalPath != "" {
-		ext.ExecutablePath = filepath.Join(ext.LocalPath, m.executableName(ext.FullName))
 	}
 	return ext, nil
 }
@@ -425,6 +423,19 @@ func (m *LocalManager) executableName(full string) string {
 		return full + ".exe"
 	}
 	return full
+}
+
+func (m *LocalManager) resolveExecutable(dir, full string) (string, error) {
+	if m.goos == "windows" {
+		path := filepath.Join(dir, m.executableName(full))
+		if _, err := os.Stat(path); err == nil {
+			return path, requireExecutable(path, m.goos)
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+	}
+	path := filepath.Join(dir, full)
+	return path, requireExecutable(path, m.goos)
 }
 
 func ensureNotInstalled(targetDir string, full string) error {
