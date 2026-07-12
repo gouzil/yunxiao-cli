@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+
+console.log(`args=${process.argv.slice(2).join("|")}`);
+for (const name of [
+  "YUNXIAO_EXTENSION",
+  "YUNXIAO_EXTENSION_NAME",
+  "YUNXIAO_EXTENSION_DIR",
+  "YUNXIAO_ENDPOINT",
+  "YUNXIAO_ORGANIZATION",
+  "YUNXIAO_PROJECT",
+  "YUNXIAO_REPO",
+]) {
+  console.log(`${name}=${process.env[name] ?? ""}`);
+}
+console.error("stderr=node");

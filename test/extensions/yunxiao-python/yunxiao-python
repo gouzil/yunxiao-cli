@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+print("args=" + "|".join(sys.argv[1:]))
+for name in (
+    "YUNXIAO_EXTENSION",
+    "YUNXIAO_EXTENSION_NAME",
+    "YUNXIAO_EXTENSION_DIR",
+    "YUNXIAO_ENDPOINT",
+    "YUNXIAO_ORGANIZATION",
+    "YUNXIAO_PROJECT",
+    "YUNXIAO_REPO",
+):
+    print(f"{name}={os.environ.get(name, '')}")
+print("stderr=python", file=sys.stderr)

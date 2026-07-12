@@ -114,11 +114,17 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 	if !reflect.DeepEqual(exec.args, []string{"--name", "world"}) {
 		t.Fatalf("args = %#v", exec.args)
 	}
-	if envValue(exec.env, "YUNXIAO_REPO") != "repo" {
-		t.Fatalf("env = %#v", exec.env)
+	wantEnv := []string{
+		"YUNXIAO_EXTENSION=1",
+		"YUNXIAO_EXTENSION_NAME=hello",
+		"YUNXIAO_EXTENSION_DIR=" + source,
+		"YUNXIAO_ENDPOINT=endpoint",
+		"YUNXIAO_ORGANIZATION=org",
+		"YUNXIAO_PROJECT=project",
+		"YUNXIAO_REPO=repo",
 	}
-	if envValue(exec.env, "YUNXIAO_TOKEN") != "" {
-		t.Fatalf("token leaked into env: %#v", exec.env)
+	if !reflect.DeepEqual(exec.env, wantEnv) {
+		t.Fatalf("env = %#v, want %#v", exec.env, wantEnv)
 	}
 	if err := manager.Remove("hello"); err != nil {
 		t.Fatal(err)
@@ -241,16 +247,6 @@ func (f *fakeGitRunner) seen(prefix string) bool {
 		}
 	}
 	return false
-}
-
-func envValue(env []string, key string) string {
-	prefix := key + "="
-	for _, value := range env {
-		if strings.HasPrefix(value, prefix) {
-			return strings.TrimPrefix(value, prefix)
-		}
-	}
-	return ""
 }
 
 func testExecutableName(name string) string {
