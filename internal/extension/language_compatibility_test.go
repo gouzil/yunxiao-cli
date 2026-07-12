@@ -17,7 +17,7 @@ import (
 )
 
 func TestExtensionLanguageCompatibility(t *testing.T) {
-	for _, name := range []string{"bash", "python3", "node", "go"} {
+	for _, name := range []string{"bash", "python", "node", "go"} {
 		if _, err := exec.LookPath(name); err != nil {
 			t.Fatalf("required runtime %q not found: %v", name, err)
 		}
@@ -51,6 +51,9 @@ func TestExtensionLanguageCompatibility(t *testing.T) {
 			copyFixture(t, filepath.Join("..", "..", "test", "extensions", fixture.source, fixture.entry), entry, fixture.build)
 			if fixture.build {
 				binary := filepath.Join(sourceDir, fixture.source)
+				if runtime.GOOS == "windows" {
+					binary += ".exe"
+				}
 				command := exec.CommandContext(context.Background(), "go", "build", "-o", binary, entry)
 				if output, err := command.CombinedOutput(); err != nil {
 					t.Fatalf("build Go fixture: %v\n%s", err, output)
@@ -79,10 +82,11 @@ func TestExtensionLanguageCompatibility(t *testing.T) {
 				t.Fatal("extension was not dispatched")
 			}
 			wantStdout := fmt.Sprintf("args=alpha|two words\nYUNXIAO_EXTENSION=1\nYUNXIAO_EXTENSION_NAME=%s\nYUNXIAO_EXTENSION_DIR=%s\nYUNXIAO_ENDPOINT=https://example.test\nYUNXIAO_ORGANIZATION=org-1\nYUNXIAO_PROJECT=project-1\nYUNXIAO_REPO=repo-1\n", fixture.name, sourceDir)
-			if stdout.String() != wantStdout {
+			gotStdout := strings.ReplaceAll(stdout.String(), "\r\n", "\n")
+			if gotStdout != wantStdout {
 				t.Fatalf("stdout:\n%s\nwant:\n%s", stdout.String(), wantStdout)
 			}
-			if got, want := stderr.String(), "stderr="+fixture.name+"\n"; got != want {
+			if got, want := strings.ReplaceAll(stderr.String(), "\r\n", "\n"), "stderr="+fixture.name+"\n"; got != want {
 				t.Fatalf("stderr = %q, want %q", got, want)
 			}
 		})

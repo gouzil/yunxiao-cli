@@ -141,6 +141,64 @@ func TestInstallLocalListRemoveAndDispatch(t *testing.T) {
 	}
 }
 
+func TestInstallLocalWindowsAcceptsScriptEntry(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "yunxiao-script")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(source, "yunxiao-script")
+	if err := os.WriteFile(entry, []byte("#!/usr/bin/env bash\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	exec := &fakeExecRunner{}
+	manager := NewManager(Options{
+		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
+		Env:  fakeEnv{"CI": "1"},
+		Exec: exec,
+		GOOS: "windows",
+	})
+	if _, err := manager.InstallLocal(context.Background(), source); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.Dispatch(context.Background(), DispatchRequest{Name: "script", IO: terminal.IOStreams{}}); err != nil {
+		t.Fatal(err)
+	}
+	if exec.executable != entry {
+		t.Fatalf("executable = %q, want %q", exec.executable, entry)
+	}
+}
+
+func TestInstallLocalWindowsPrefersBinaryEntry(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "yunxiao-binary")
+	if err := os.MkdirAll(source, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"yunxiao-binary", "yunxiao-binary.exe"} {
+		if err := os.WriteFile(filepath.Join(source, name), nil, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exec := &fakeExecRunner{}
+	manager := NewManager(Options{
+		Dirs: Dirs{DataDir: filepath.Join(dir, "data"), StateDir: filepath.Join(dir, "state")},
+		Env:  fakeEnv{"CI": "1"},
+		Exec: exec,
+		GOOS: "windows",
+	})
+	if _, err := manager.InstallLocal(context.Background(), source); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.Dispatch(context.Background(), DispatchRequest{Name: "binary", IO: terminal.IOStreams{}}); err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(source, "yunxiao-binary.exe")
+	if exec.executable != want {
+		t.Fatalf("executable = %q, want %q", exec.executable, want)
+	}
+}
+
 func TestInstallRemoteUsesGitAndWritesManifest(t *testing.T) {
 	dir := t.TempDir()
 	git := &fakeGitRunner{t: t}

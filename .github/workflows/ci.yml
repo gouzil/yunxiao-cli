@@ -26,12 +26,10 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Setup Python
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
       - name: Setup Node.js
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -44,11 +42,7 @@ jobs:
           node --check test/extensions/yunxiao-node/yunxiao-node
           go vet ./test/extensions/yunxiao-go
           go build -o "$RUNNER_TEMP/yunxiao-go" ./test/extensions/yunxiao-go
-      - name: Test
-        if: matrix.os != 'ubuntu-latest'
-        run: go test ./...
       - name: Acceptance test extension language compatibility
-        if: matrix.os == 'ubuntu-latest'
         run: go test -tags=acceptance ./...
       - name: Vet
         run: go vet ./...

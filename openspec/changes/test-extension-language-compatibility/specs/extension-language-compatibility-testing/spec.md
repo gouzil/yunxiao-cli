@@ -7,6 +7,10 @@
 - **WHEN** 兼容性测试为 Shell、Python、Node.js 和 Go 分别创建符合 `yunxiao-<name>` 命名约定的可执行入口
 - **THEN** 每个入口都能由 `InstallLocal` 安装，并能使用短名称通过 `Dispatch` 成功执行
 
+#### Scenario: Windows 同时识别脚本和二进制入口
+- **WHEN** Windows 扩展目录包含无后缀的 `yunxiao-<name>` 脚本或 `yunxiao-<name>.exe` 二进制
+- **THEN** 管理器保持 `.exe` 二进制直接执行，并在没有 `.exe` 时识别无后缀脚本并通过 `sh.exe` 分发
+
 #### Scenario: 默认单元测试不报告兼容性测试跳过
 - **WHEN** 开发者运行不带 build tag 的 `go test ./...`
 - **THEN** 多语言真实进程测试不进入默认单元测试集合，测试输出中不会以环境变量未设置为由报告该测试跳过
@@ -34,10 +38,10 @@
 - **THEN** 它使用现有 API 命令测试验证宿主鉴权及 stdout/stderr 边界，不要求四种语言 fixture 各自启动 HTTP 测试服务
 
 ### Requirement: CI 确定性执行
-CI MUST 在 Linux acceptance 步骤提供并执行多语言测试所需的 Bash、Python、Node.js 和 Go 运行时，并通过 `go test -tags=acceptance ./...` 纳入完整矩阵；缺少任一声明运行时 MUST 导致失败。
+CI MUST 在 Linux、macOS 和 Windows 三个平台提供并执行多语言测试所需的 Bash、Python、Node.js 和 Go 运行时，并统一通过 `go test -tags=acceptance ./...` 纳入完整矩阵；缺少任一声明运行时 MUST 导致失败。
 
-#### Scenario: Linux CI 运行完整语言矩阵
-- **WHEN** Linux CI job 执行测试
+#### Scenario: 三平台 CI 运行完整语言矩阵
+- **WHEN** Linux、macOS 或 Windows CI job 执行测试
 - **THEN** CI 显式准备 Python 与 Node.js、复用已配置的 Go 和 Bash，并使用 `acceptance` build tag 运行完整四语言兼容性测试
 
 #### Scenario: 必需运行时缺失

@@ -24,7 +24,7 @@ test/extensions/
 
 .github/workflows/
 ├── fmt.yml                          # 复用 prek 执行格式检查
-└── ci.yml                           # Linux job 准备运行时、语法检查并执行兼容性测试
+└── ci.yml                           # 三平台准备运行时并执行兼容性测试
 
 $TMPDIR/                             # 由 t.TempDir() 管理，不进入仓库
 ├── sources/yunxiao-<language>/      # 已提交 fixture 的运行副本
@@ -48,7 +48,7 @@ Go 驱动测试沿用当前仓库的同包就近放置惯例；跨语言输入�
 - 不承诺 CLI 自动安装 Python、Node.js 或其他语言运行时。
 - 不为每种语言新增 `extension create` 模板或 SDK。
 - 不在四个入口中重复测试 `yunxiao api` 的 HTTP、鉴权和 JSON 过滤逻辑；该契约继续由 API 命令测试负责。
-- 不改变 Windows 的 `.exe` 入口约定，也不声称解释型脚本矩阵覆盖所有平台。
+- 不增加新的 Windows 包装器格式；沿用 `gh` 的无后缀脚本经 `sh.exe`、`.exe` 二进制直接执行约定。
 
 ## Decisions
 
@@ -66,9 +66,9 @@ Shell、Python、Node.js 和 Go 源码分别提交到 `test/extensions/yunxiao-<
 
 ### 3. 严格参考 `cli/cli` 用 acceptance build tag 分层
 
-`cli/cli` 的默认扩展单测直接运行，不用环境变量在测试函数内调用 `t.Skip`，并在 manager 测试中对 Windows 的 `sh -c` 分发和本地安装路径文件分支单独断言；需要真实系统和 Bash 的端到端流程放在 `//go:build acceptance` 层，由 CI 显式选择。这里使用同名 `//go:build acceptance`，不加 `!windows` 编译排除；默认 `go test ./...` 在三平台运行 manager 单测，Linux CI 显式准备 Python 和 Node.js，并运行 `go test -tags=acceptance ./...`。任何必需解释器缺失都直接失败。Shell 使用 runner 自带 Bash，Go 复用已有 `setup-go`。
+`cli/cli` 的默认扩展单测直接运行，不用环境变量在测试函数内调用 `t.Skip`，并在 manager 测试中对 Windows 的 `sh -c` 分发和本地安装路径文件分支单独断言；需要真实系统和 Bash 的端到端流程放在 `//go:build acceptance` 层。这里使用同名 `//go:build acceptance`，不加平台编译排除；默认 `go test ./...` 和带 tag 的 acceptance 都在三平台运行。CI 在每个平台显式准备 Python 和 Node.js，复用已有 Go 和 Bash，任何必需解释器缺失都直接失败。
 
-与 `cli/cli` 一样，Windows 覆盖由默认 manager 单测负责，真实脚本 acceptance 由明确的 Linux CI 步骤负责；测试文件本身不再用 `!windows` 隐藏。也不保留运行时环境变量或 `t.Skip`，避免默认单测以“通过”掩盖关键测试未执行。
+Windows 的本地入口发现保留现有 `.exe` 优先规则，不存在 `.exe` 时再查找无后缀 `yunxiao-<name>`。后者由已有 `RealExecRunner` 通过 `sh.exe` 执行 shebang 脚本；这与 `cli/cli` 的脚本/二进制分流一致，并避免为每种语言生成测试专用包装器。
 
 ### 4. 只跨语言验证语言相关的进程边界
 
@@ -78,7 +78,7 @@ Shell、Python、Node.js 和 Go 源码分别提交到 `test/extensions/yunxiao-<
 
 ## Risks / Trade-offs
 
-- [Linux acceptance 通过不能证明每种语言在每个平台都可执行] → 与 `cli/cli` 一样由三平台默认 manager 单测覆盖平台分支，Linux acceptance 覆盖真实脚本进程协议。
+- [Windows 的 shebang 脚本依赖 Git for Windows] → CI 显式检查 Bash/sh 可用；缺失时 acceptance 直接失败并给出运行时错误。
 - [GitHub runner 镜像升级可能改变预装工具] → CI 显式使用 setup action 固定 Python 和 Node.js 主版本，启用测试时缺失 Bash 或解释器直接失败。
 - [新增 Ruff 和 Prettier 检查增加 CI 下载时间] → 通过固定版本的 pre-commit hook 缓存工具，不创建 Python 或 Node.js 应用依赖树。
 - [编译 Go fixture 增加少量测试时间] → 仅在显式多语言测试中编译一个最小程序，产物写入临时目录。
