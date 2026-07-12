@@ -1,3 +1,5 @@
+//go:build integration && !windows
+
 package extension
 
 import (
@@ -14,15 +16,7 @@ import (
 	"github.com/gouzil/yunxiao-cli/internal/terminal"
 )
 
-const languageCompatibilityEnv = "YUNXIAO_TEST_EXTENSION_LANGUAGE_COMPATIBILITY"
-
 func TestExtensionLanguageCompatibility(t *testing.T) {
-	if os.Getenv(languageCompatibilityEnv) != "1" {
-		t.Skip("set " + languageCompatibilityEnv + "=1 to run")
-	}
-	if runtime.GOOS == "windows" {
-		t.Fatal("the language compatibility matrix requires Unix executable entries")
-	}
 	for _, name := range []string{"bash", "python3", "node", "go"} {
 		if _, err := exec.LookPath(name); err != nil {
 			t.Fatalf("required runtime %q not found: %v", name, err)

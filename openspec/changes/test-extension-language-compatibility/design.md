@@ -64,11 +64,11 @@ Shell、Python、Node.js 和 Go 源码分别提交到 `test/extensions/yunxiao-<
 
 不引入 pytest、npm 应用脚手架、ESLint 配置或嵌套 Go module。fixture 没有业务依赖：Python 用标准库，Node.js 用内置模块，Go 直接属于主 module；这些额外工程文件不会提升本次兼容性证据。
 
-### 3. 多语言矩阵作为显式的 Linux CI 契约测试
+### 3. 参考 `cli/cli` 用 build tag 分离单测与真实进程测试
 
-CI 的 Linux job 显式准备 Python 和 Node.js，并通过一个环境开关启用多语言测试；启用后，任何必需解释器缺失都必须失败，不能静默跳过。Shell 使用 runner 自带 Bash，Go 复用已有 `setup-go`。macOS 和 Windows 继续运行现有 `go test ./...`，但不启用这组解释型入口矩阵。
+`cli/cli` 的默认扩展单测直接运行，不用环境变量在测试函数内调用 `t.Skip`；需要真实系统和 Bash 的端到端流程放在 `//go:build acceptance` 层，由 CI 显式选择。这里沿用同一分层原则，但不引入额外的 `testscript` 依赖：多语言测试文件使用 `//go:build integration && !windows`，默认 `go test ./...` 只运行稳定单测且不会报告兼容性测试被跳过；Linux CI 显式准备 Python 和 Node.js，并运行 `go test -tags=integration ./...`。任何必需解释器缺失都直接失败。Shell 使用 runner 自带 Bash，Go 复用已有 `setup-go`；macOS 和 Windows 继续运行现有默认单测。
 
-备选方案是在所有三个系统执行全部语言，但当前 Windows 安装契约要求 `.exe` 入口，这会把脚本包装和平台适配混进语言兼容性目标。另一个备选是开发机发现解释器不存在就逐项跳过，但它会让 CI 误报成功。显式 Linux 开关同时保持默认单元测试轻量和 CI 确定性。
+不在所有三个系统执行全部语言：当前 Windows 安装契约要求 `.exe` 入口，这会把脚本包装和平台适配混进语言兼容性目标。也不保留运行时环境变量或 `t.Skip`，避免默认单测以“通过”掩盖关键测试未执行。build tag 让两层测试的选择在命令行和 CI 配置中可见。
 
 ### 4. 只跨语言验证语言相关的进程边界
 
@@ -78,7 +78,7 @@ CI 的 Linux job 显式准备 Python 和 Node.js，并通过一个环境开关�
 
 ## Risks / Trade-offs
 
-- [Linux 通过不能证明每种语言在每个平台都可执行] → 文档继续以“当前平台存在可执行入口和运行时”为前提；现有三平台 Go 测试保留平台路径覆盖。
+- [Linux 通过不能证明每种语言在每个平台都可执行] → `integration && !windows` 明确限定真实脚本进程测试范围；现有三平台默认 Go 单测保留平台路径覆盖。
 - [GitHub runner 镜像升级可能改变预装工具] → CI 显式使用 setup action 固定 Python 和 Node.js 主版本，启用测试时缺失 Bash 或解释器直接失败。
 - [新增 Ruff 和 Prettier 检查增加 CI 下载时间] → 通过固定版本的 pre-commit hook 缓存工具，不创建 Python 或 Node.js 应用依赖树。
 - [编译 Go fixture 增加少量测试时间] → 仅在显式多语言测试中编译一个最小程序，产物写入临时目录。
