@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 const (
 	DefaultEndpoint = "openapi-rdc.aliyuncs.com"
 	tokenHeader     = "x-yunxiao-token"
+	defaultRetryMax = 2
 )
 
 type Header struct {
@@ -91,6 +93,9 @@ func NewClient(options ClientOptions) *Client {
 		httpClient = &http.Client{Timeout: timeout}
 	}
 	retryMax := options.RetryMax
+	if retryMax == 0 {
+		retryMax = defaultRetryMax
+	}
 	if retryMax < 0 {
 		retryMax = 0
 	}
@@ -134,8 +139,7 @@ func (c *Client) Do(ctx context.Context, request Request, out any) (ResponseMeta
 			return meta, nil
 		}
 		lastErr = err
-		var apiErr *Error
-		if errors.As(err, &apiErr) && !apiErr.Retryable() {
+		if !shouldRetry(request.Method, err) {
 			return meta, err
 		}
 		if attempt+1 < attempts {
@@ -147,6 +151,21 @@ func (c *Client) Do(ctx context.Context, request Request, out any) (ResponseMeta
 		}
 	}
 	return ResponseMeta{}, lastErr
+}
+
+func shouldRetry(method string, err error) bool {
+	if method != http.MethodGet && method != http.MethodHead {
+		return false
+	}
+	var apiErr *Error
+	if errors.As(err, &apiErr) {
+		return apiErr.Retryable()
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	var networkErr net.Error
+	return errors.As(err, &networkErr)
 }
 
 func (c *Client) doOnce(ctx context.Context, request Request, out any) (ResponseMeta, error) {
