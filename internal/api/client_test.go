@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -71,5 +72,65 @@ func TestClientRedactsTokenHeaderAndReturnsAPIError(t *testing.T) {
 	}
 	if strings.Contains(debug.String(), "top-secret") {
 		t.Fatalf("debug output leaked token: %s", debug.String())
+	}
+}
+
+func TestClientRetriesEOFForReadMethodsByDefault(t *testing.T) {
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		t.Run(method, func(t *testing.T) {
+			var attempts atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if attempts.Add(1) < 3 {
+					panic(http.ErrAbortHandler)
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer server.Close()
+
+			client := NewClient(ClientOptions{Endpoint: server.URL})
+			if _, err := client.Do(context.Background(), Request{Method: method, Path: "/"}, nil); err != nil {
+				t.Fatalf("Do(%s) returned error: %v", method, err)
+			}
+			if got := attempts.Load(); got != 3 {
+				t.Fatalf("attempts = %d, want 3", got)
+			}
+		})
+	}
+}
+
+func TestClientDoesNotRetryEOFForWriteMethods(t *testing.T) {
+	var attempts atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts.Add(1)
+		panic(http.ErrAbortHandler)
+	}))
+	defer server.Close()
+
+	client := NewClient(ClientOptions{Endpoint: server.URL})
+	_, err := client.Do(context.Background(), Request{Method: http.MethodPost, Path: "/"}, nil)
+	if err == nil {
+		t.Fatal("expected EOF error")
+	}
+	if got := attempts.Load(); got != 1 {
+		t.Fatalf("attempts = %d, want 1", got)
+	}
+}
+
+func TestClientDoesNotRetryPermanentResponseErrors(t *testing.T) {
+	var attempts atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts.Add(1)
+		_, _ = w.Write([]byte(`{"broken":`))
+	}))
+	defer server.Close()
+
+	client := NewClient(ClientOptions{Endpoint: server.URL})
+	var response map[string]any
+	_, err := client.Do(context.Background(), Request{Method: http.MethodGet, Path: "/"}, &response)
+	if err == nil {
+		t.Fatal("expected decode error")
+	}
+	if got := attempts.Load(); got != 1 {
+		t.Fatalf("attempts = %d, want 1", got)
 	}
 }
