@@ -23,10 +23,11 @@ const (
 )
 
 type Options struct {
-	JSONFields []string `json:"jsonFields,omitempty"`
-	JQ         string   `json:"jq,omitempty"`
-	Template   string   `json:"template,omitempty"`
-	Plain      bool     `json:"plain"`
+	JSONFields        []string `json:"jsonFields,omitempty"`
+	JSONFieldFallback string   `json:"jsonFieldFallback,omitempty"`
+	JQ                string   `json:"jq,omitempty"`
+	Template          string   `json:"template,omitempty"`
+	Plain             bool     `json:"plain"`
 }
 
 type Row []string
@@ -133,7 +134,7 @@ func (r *Renderer) renderTemplate(value any, rawTemplate string) error {
 }
 
 func (r *Renderer) renderJSON(value any, options Options) error {
-	filtered, err := SelectFields(value, options.JSONFields)
+	filtered, err := selectFields(value, options.JSONFields, options.JSONFieldFallback)
 	if err != nil {
 		return err
 	}
@@ -149,6 +150,10 @@ func (r *Renderer) renderJSON(value any, options Options) error {
 }
 
 func SelectFields(value any, fields []string) (any, error) {
+	return selectFields(value, fields, "")
+}
+
+func selectFields(value any, fields []string, fallback string) (any, error) {
 	normalized := normalize(value)
 	if len(fields) == 0 {
 		return normalized, nil
@@ -156,7 +161,7 @@ func SelectFields(value any, fields []string) (any, error) {
 	if items, ok := normalized.([]any); ok {
 		selected := make([]any, 0, len(items))
 		for _, item := range items {
-			selectedItem, err := selectObjectFields(item, fields)
+			selectedItem, err := selectObjectFields(item, fields, fallback)
 			if err != nil {
 				return nil, err
 			}
@@ -164,15 +169,16 @@ func SelectFields(value any, fields []string) (any, error) {
 		}
 		return selected, nil
 	}
-	return selectObjectFields(normalized, fields)
+	return selectObjectFields(normalized, fields, fallback)
 }
 
-func selectObjectFields(value any, fields []string) (map[string]any, error) {
+func selectObjectFields(value any, fields []string, fallback string) (map[string]any, error) {
 	selected := make(map[string]any, len(fields))
 	source, ok := value.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("--json fields require object output")
 	}
+	fallbackSource, _ := source[fallback].(map[string]any)
 	for _, field := range fields {
 		field = strings.TrimSpace(field)
 		if field == "" {
@@ -180,11 +186,22 @@ func selectObjectFields(value any, fields []string) (map[string]any, error) {
 		}
 		value, ok := source[field]
 		if !ok {
-			return nil, fmt.Errorf("unknown JSON field %q; available fields: %s", field, strings.Join(sortedKeys(source), ", "))
+			value, ok = fallbackSource[field]
+		}
+		if !ok {
+			return nil, unknownJSONFieldError(field, source, fallback, fallbackSource)
 		}
 		selected[field] = value
 	}
 	return selected, nil
+}
+
+func unknownJSONFieldError(field string, source map[string]any, fallback string, fallbackSource map[string]any) error {
+	message := fmt.Sprintf("unknown JSON field %q; available fields: %s", field, strings.Join(sortedKeys(source), ", "))
+	if fallback != "" && fallbackSource != nil {
+		message += fmt.Sprintf("; available %s fields: %s", fallback, strings.Join(sortedKeys(fallbackSource), ", "))
+	}
+	return fmt.Errorf("%s", message)
 }
 
 func ApplyJQ(value any, expression string) (any, error) {

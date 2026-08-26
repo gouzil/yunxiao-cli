@@ -245,6 +245,55 @@ func TestMRDiffJSONCanIncludeMergeRequest(t *testing.T) {
 	}
 }
 
+func TestMRViewJSONAllowsMergeRequestFields(t *testing.T) {
+	service := &fakeCommandService{}
+	root, out := newCommandTestRoot(t, yunxiao.ServiceSet{Repo: service, MR: service})
+
+	if err := root.Execute(context.Background(), []string{"mr", "view", "1893", "--json", "iid,state,hasConflicts,mergeable,pipelineStatus,webUrl"}); err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("output is not JSON: %v\n%s", err, out.String())
+	}
+	if got["iid"] != "1893" || got["state"] != "UNDER_REVIEW" || got["hasConflicts"] != false || got["mergeable"] != false || got["pipelineStatus"] != "" || got["webUrl"] != "https://example.test/change/1893" {
+		t.Fatalf("output = %#v", got)
+	}
+}
+
+func TestMRViewJSONKeepsWrapperFields(t *testing.T) {
+	service := &fakeCommandService{}
+	root, out := newCommandTestRoot(t, yunxiao.ServiceSet{Repo: service, MR: service})
+
+	if err := root.Execute(context.Background(), []string{"mr", "view", "1893", "--json", "mergeRequest,meta"}); err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("output is not JSON: %v\n%s", err, out.String())
+	}
+	if _, ok := got["mergeRequest"]; !ok {
+		t.Fatalf("mergeRequest is missing: %#v", got)
+	}
+	if _, ok := got["meta"]; !ok {
+		t.Fatalf("meta is missing: %#v", got)
+	}
+}
+
+func TestMRViewJSONUnknownFieldListsWrapperAndMergeRequestFields(t *testing.T) {
+	service := &fakeCommandService{}
+	root, _, errOut := newCommandTestRootWithBuffers(t, yunxiao.ServiceSet{Repo: service, MR: service}, nil)
+
+	if err := root.Execute(context.Background(), []string{"mr", "view", "1893", "--json", "missing"}); err == nil {
+		t.Fatal("expected error")
+	}
+	for _, want := range []string{"unknown JSON field \"missing\"", "available fields: mergeRequest, meta", "available mergeRequest fields:", "iid", "webUrl"} {
+		if !strings.Contains(errOut.String(), want) {
+			t.Fatalf("stderr = %q; missing %q", errOut.String(), want)
+		}
+	}
+}
+
 func TestMRCommentCommandParsesInlineFlags(t *testing.T) {
 	service := &fakeCommandService{}
 	root, out := newCommandTestRoot(t, yunxiao.ServiceSet{Repo: service, MR: service})
@@ -761,7 +810,7 @@ func (f *fakeCommandService) ListMergeRequests(ctx context.Context, request yunx
 }
 
 func (f *fakeCommandService) GetMergeRequest(ctx context.Context, request yunxiao.GetMergeRequestRequest) (yunxiao.MergeRequestResult, error) {
-	return yunxiao.MergeRequestResult{MergeRequest: yunxiao.MergeRequest{ID: request.MergeRequestID, IID: request.MergeRequestID, Title: "Add CLI"}}, nil
+	return yunxiao.MergeRequestResult{MergeRequest: yunxiao.MergeRequest{ID: request.MergeRequestID, IID: request.MergeRequestID, Title: "Add CLI", State: "UNDER_REVIEW", HasConflicts: yunxiao.BoolPtr(false), Mergeable: yunxiao.BoolPtr(false), WebURL: "https://example.test/change/" + request.MergeRequestID}}, nil
 }
 
 func (f *fakeCommandService) CreateMergeRequest(ctx context.Context, request yunxiao.CreateMergeRequestRequest) (yunxiao.MergeRequestResult, error) {
