@@ -80,7 +80,9 @@ func (r *Root) newMRViewCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return r.renderer.RenderDetail(result, output.MergeRequestDetail(result.MergeRequest, renderedDescription), r.renderOptions())
+			options := r.renderOptions()
+			options.JSONFieldFallback = "mergeRequest"
+			return r.renderer.RenderDetail(result, output.MergeRequestDetail(result.MergeRequest, renderedDescription), options)
 		},
 	}
 	cmd.Flags().BoolVar(&web, "web", false, "Open merge request in a browser")
